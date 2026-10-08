@@ -3,8 +3,16 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pygame
+from pygame.surface import Surface
 
-from mxbiflow.trial import SemanticEvent, State, Trial, TrialScene, track_touch
+from mxbiflow.trial import (
+    SemanticEvent,
+    State,
+    Stimulus,
+    Trial,
+    TrialScene,
+    track_touch,
+)
 
 
 class _Region:
@@ -14,6 +22,18 @@ class _Region:
 
 class _TrialScene(TrialScene):
     pass
+
+
+class _DynamicStimulus(Stimulus):
+    def __init__(self) -> None:
+        super().__init__()
+        self.updates: list[float] = []
+
+    def update(self, dt_s: float) -> None:
+        self.updates.append(dt_s)
+
+    def draw(self, screen: Surface) -> None:
+        del screen
 
 
 class TrialSceneTests(unittest.TestCase):
@@ -87,6 +107,25 @@ class TrialSceneTests(unittest.TestCase):
         assert runtime is not None
         self.assertEqual(runtime.current_state, target_state)
         self.assertEqual(len(touches), 1)
+
+    def test_scene_updates_dynamic_stimuli_each_frame(self) -> None:
+        stimulus = _DynamicStimulus()
+        running = State("running")
+        running.duration = None
+        _TrialScene.trial_factory = staticmethod(
+            lambda context: Trial(
+                initial_state="running",
+                states=[running],
+                stimuli=[stimulus],
+            )
+        )
+
+        with patch("mxbiflow.trial.scene.get_mxbiflow", return_value=self.mxbiflow):
+            scene = _TrialScene()
+            scene.start()
+            scene.update(0.025)
+
+        self.assertEqual(stimulus.updates, [0.025])
 
 
 if __name__ == "__main__":

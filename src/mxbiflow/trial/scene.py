@@ -94,6 +94,9 @@ class TrialScene(Scene):
     def update(self, dt_s: float) -> None:
         if not self._running or self._runtime is None:
             return
+        if self._trial is not None:
+            for stimulus in self._trial.stimuli:
+                stimulus.update(dt_s)
         self._runtime.update(dt_s)
         if self._runtime.completed:
             self.quit()

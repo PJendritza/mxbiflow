@@ -12,15 +12,21 @@ from .events import (
 from .runtime import TrialRuntime
 from .scene import TrialFactory, TrialScene, TrialSceneContext
 from .state import State
+from .stimuli import Background, Image, PositionTrail, Stimulus, TimestampedPosition
 from .trial import Trial
 
 __all__ = [
     "Action",
+    "Background",
     "Call",
     "EventQueue",
+    "Image",
+    "PositionTrail",
     "SemanticEvent",
     "Set",
     "State",
+    "Stimulus",
+    "TimestampedPosition",
     "TouchEvents",
     "TouchSample",
     "TouchTracker",

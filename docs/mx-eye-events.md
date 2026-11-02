@@ -28,25 +28,21 @@ git fetch origin
 git switch feature/mx-eye-events
 git pull --ff-only origin feature/mx-eye-events
 uv sync --locked
-uv pip install --python .venv/Scripts/python.exe --no-deps -e ../mx_eye/packages/protocol -e ../mx_eye/packages/py-mx-eye
 ```
 
-On Linux, use `.venv/bin/python` instead of `.venv/Scripts/python.exe`.
-Continue using `uv run --no-sync` in mxbiflow: its lockfile still pins the older
-SDK, so automatic synchronization would replace the development SDK overrides.
-Repeat the install command after rebuilding or synchronizing that environment.
+The MXBI Flow branch pins the matching MX Eye SDK, so no manual SDK installation
+or special `--no-sync` launch command is required.
 
 ### Launch the demo
 
-The local protocol and SDK have been installed into mxbiflow's development
-environment. Use `--no-sync`: a normal uv sync would reinstall the older SDK
-pinned in the lockfile. No experiment dependencies or config files were changed.
+The matching protocol and SDK are installed by the normal `uv sync --locked`
+command. No experiment dependencies or config files are changed by the demo.
 
 PowerShell window 1:
 
 ```powershell
 cd "C:\Users\patri\Code\mxbi\mx_eye"
-uv run --no-sync mx-eye
+uv run mx-eye
 ```
 
 Select **Simulation**, press **Start**, and leave this window running. Its local
@@ -56,7 +52,7 @@ PowerShell window 2:
 
 ```powershell
 cd "C:\Users\patri\Code\mxbi\mxbiflow"
-uv run --no-sync python examples/eye_events_demo.py
+uv run python examples/eye_events_demo.py
 ```
 
 - `0`: animal enters; mx_eye starts a new recording.
@@ -69,19 +65,10 @@ Watch the **MXBI** line at the bottom of mx_eye and its Record button. The demo
 uses MXBI Flow's real detector bridge, game loop and SDK transport. It uses mock
 hardware and does not touch the existing experiment's config or data.
 
-If the development environment is rebuilt, restore its local SDK overrides:
-
-```powershell
-cd "C:\Users\patri\Code\mxbi\mxbiflow"
-uv sync --locked
-uv pip install --python .venv/Scripts/python.exe --no-deps -e ../mx_eye/packages/protocol -e ../mx_eye/packages/py-mx-eye
-```
-
 ## Enable in an existing experiment
 
-Install these local protocol/SDK packages and the local mxbiflow checkout into
-the experiment environment before running with `--no-sync`. The task's old
-Git-pinned dependency otherwise cannot see this branch's framework changes.
+Install this mxbiflow branch in the experiment environment. A task that pins an
+older mxbiflow commit cannot see this branch's framework changes.
 Set these fields on the enabled `mx_eye` eyetracker in its `mxbi.json`:
 
 ```json

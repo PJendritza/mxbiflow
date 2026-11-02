@@ -65,11 +65,15 @@ class MxEyeEyetracker:
         poll_timeout: float = 0.1,
         max_age_ms: float = 50.0,
         start_acquisition: bool = False,
+        send_experiment_events: bool = False,
+        record_on_animal: bool = False,
     ) -> None:
         self._client = client
         self._poll_timeout = poll_timeout
         self._max_age_ms = max_age_ms
         self._start_acquisition = start_acquisition
+        self.event_client = client if send_experiment_events else None
+        self.record_on_animal = record_on_animal
 
         self._lock = Lock()
         self._stop_event = Event()

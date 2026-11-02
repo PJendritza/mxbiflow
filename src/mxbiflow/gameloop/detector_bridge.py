@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import time
 from queue import Empty, SimpleQueue
 
 import pygame
@@ -15,6 +16,8 @@ EVT_DETECTOR = pygame.USEREVENT + 1
 class DetectorMsg:
     kind: DetectorEvent
     animal: str | None
+    rfid_id: str | None = None
+    timestamp_ns: int = 0
 
 
 class DetectorBridge:
@@ -47,18 +50,22 @@ class DetectorBridge:
         # fmt: on
         self._detector.begin()
 
-    def _enqueue(self, kind: DetectorEvent, animal: str | None) -> None:
-        self._q.put(DetectorMsg(kind=kind, animal=animal))
+    def _enqueue(self, kind: DetectorEvent, animal: str | None,
+                 result: DetectionResult | None = None) -> None:
+        self._q.put(DetectorMsg(kind=kind, animal=animal,
+            rfid_id=result.animal_id if result else None,
+            timestamp_ns=round(result.timestamp * 1e9)
+            if result and result.timestamp > 0 else time.time_ns()))
 
     def _on_animal_entered(self, result: DetectionResult) -> None:
         name = self._resolve_animal(result.animal_id)
         if name is None:
-            self._enqueue(DetectorEvent.UNKNOWN_ANIMAL_ENTERED, result.animal_id)
+            self._enqueue(DetectorEvent.UNKNOWN_ANIMAL_ENTERED, result.animal_id, result)
             return
-        self._enqueue(DetectorEvent.ANIMAL_ENTERED, name)
+        self._enqueue(DetectorEvent.ANIMAL_ENTERED, name, result)
 
     def _on_animal_left(self, result: DetectionResult) -> None:
-        self._enqueue(DetectorEvent.ANIMAL_LEFT, self._resolve_animal(result.animal_id))
+        self._enqueue(DetectorEvent.ANIMAL_LEFT, self._resolve_animal(result.animal_id), result)
 
     def _on_animal_identified(self, result: DetectionResult) -> None:
         name = self._resolve_animal(result.animal_id)
@@ -67,14 +74,13 @@ class DetectorBridge:
                 "Identified RFID tag has no configured animal mapping",
                 extra={"animal_id": result.animal_id},
             )
-            return
-        self._enqueue(DetectorEvent.ANIMAL_IDENTIFIED, name)
+        self._enqueue(DetectorEvent.ANIMAL_IDENTIFIED, name, result)
 
     def _on_unknown_animal_entered(self, result: DetectionResult) -> None:
-        self._enqueue(DetectorEvent.UNKNOWN_ANIMAL_ENTERED, result.animal_id)
+        self._enqueue(DetectorEvent.UNKNOWN_ANIMAL_ENTERED, result.animal_id, result)
 
     def _on_fault_detected(self, result: DetectionResult) -> None:
-        self._enqueue(DetectorEvent.FAULT_DETECTED, result.animal_id)
+        self._enqueue(DetectorEvent.FAULT_DETECTED, result.animal_id, result)
 
     def emit_pygame_event(self) -> None:
         while True:

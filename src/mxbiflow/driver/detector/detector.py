@@ -16,6 +16,8 @@ class DetectorEvent(StrEnum):
 
     Attributes
     ----------
+    BEAM_BROKEN
+        A combined detector sensed entry and is still waiting for identification.
     ANIMAL_ENTERED
         An identified animal has been detected.
     ANIMAL_LEFT
@@ -28,6 +30,7 @@ class DetectorEvent(StrEnum):
         A fault occurred while reading sensor inputs.
     """
 
+    BEAM_BROKEN = auto()
     ANIMAL_ENTERED = auto()
     ANIMAL_LEFT = auto()
     UNKNOWN_ANIMAL_ENTERED = auto()

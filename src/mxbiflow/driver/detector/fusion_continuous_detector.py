@@ -72,9 +72,9 @@ class FusionContinuousDetector:
 
     Detection logic
     ---------------
-    * **Rising edge** (beam broken — animal arrives): start an RFID window
-      controlled by ``rfid_timeout``. If a fresh tag captured after this edge
-      is read, emit ``ANIMAL_ENTERED`` with the animal's identity.
+    * **Rising edge** (beam broken — animal arrives): emit ``BEAM_BROKEN`` and
+      start an RFID window controlled by ``rfid_timeout``. If a fresh tag
+      captured after this edge is read, emit ``ANIMAL_ENTERED`` with the animal's identity.
       If the window expires without a valid tag, emit
       ``UNKNOWN_ANIMAL_ENTERED`` with ``animal_id=None`` and ``error=True``
       (unknown animal).
@@ -320,9 +320,11 @@ class FusionContinuousDetector:
     def _noop(self) -> None:
         """No side-effect transition."""
 
-    def _on_rising_edge(self) -> None:
-        """Beam broken — start RFID acquisition window."""
-        self._edge_time = time()
+    def _on_rising_edge(self) -> _Notification:
+        """Report presence and start the RFID acquisition window."""
+        result = self._make_result()
+        self._edge_time = result.timestamp
+        return DetectorEvent.BEAM_BROKEN, result
 
     def _on_entered_confirmed(self) -> _Notification | None:
         """RFID read while beam is broken — identified animal entered."""

@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import time
+from dataclasses import dataclass
 from queue import Empty, SimpleQueue
 
 import pygame
@@ -42,6 +42,7 @@ class DetectorBridge:
         self._started = True
 
         # fmt: off
+        self._detector.register_event(DetectorEvent.BEAM_BROKEN, self._on_beam_broken)
         self._detector.register_event(DetectorEvent.ANIMAL_ENTERED, self._on_animal_entered)
         self._detector.register_event(DetectorEvent.ANIMAL_IDENTIFIED, self._on_animal_identified)
         self._detector.register_event(DetectorEvent.ANIMAL_LEFT, self._on_animal_left)
@@ -56,6 +57,9 @@ class DetectorBridge:
             rfid_id=result.animal_id if result else None,
             timestamp_ns=round(result.timestamp * 1e9)
             if result and result.timestamp > 0 else time.time_ns()))
+
+    def _on_beam_broken(self, result: DetectionResult) -> None:
+        self._enqueue(DetectorEvent.BEAM_BROKEN, None, result)
 
     def _on_animal_entered(self, result: DetectionResult) -> None:
         name = self._resolve_animal(result.animal_id)

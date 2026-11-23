@@ -1,5 +1,5 @@
-from pathlib import Path
 import time
+from pathlib import Path
 from uuid import uuid4
 
 from mxbiflow.driver import MXBI
@@ -18,6 +18,7 @@ class MXBIFlow:
         self._eye_events = None
         self._run_id = str(uuid4())
         self._visit_id = None
+        self._eye_visit_from_beam = False
         self._eye_animal = None
         self._eye_rfid = None
         self._pending_stimuli = []
@@ -59,15 +60,24 @@ class MXBIFlow:
     def eye_detector_event(self, msg):
         """Forward detector transitions, preserving raw RFID and detection time."""
         kind = str(msg.kind)
-        if kind in ("animal_entered", "unknown_animal_entered"):
+        animal = None if kind == "unknown_animal_entered" else msg.animal
+        if self._eye_visit_from_beam and kind in ("animal_entered", "unknown_animal_entered"):
+            # The fused detector's later entry is the result of RFID scanning.
+            # A timeout has no tag, while an unmapped tag still carries its raw ID.
+            if msg.rfid_id is None:
+                return
+            kind = "animal_identified"
+
+        if kind in ("beam_broken", "animal_entered", "unknown_animal_entered"):
             if self._visit_id is not None:
                 self._send_eye_event("animal_left", msg.timestamp_ns)
             self._visit_id = str(uuid4())
-            self._eye_animal = msg.animal if kind == "animal_entered" else None
+            self._eye_visit_from_beam = kind == "beam_broken"
+            self._eye_animal = animal if kind == "animal_entered" else None
             self._eye_rfid = msg.rfid_id
             kind = "animal_entered"
         elif kind == "animal_identified":
-            self._eye_animal, self._eye_rfid = msg.animal, msg.rfid_id
+            self._eye_animal, self._eye_rfid = animal, msg.rfid_id
         elif kind == "fault_detected":
             kind = "detector_fault"
         elif kind != "animal_left":
@@ -75,6 +85,7 @@ class MXBIFlow:
         self._send_eye_event(kind, msg.timestamp_ns)
         if kind in ("animal_left", "detector_fault"):
             self._visit_id = self._eye_animal = self._eye_rfid = None
+            self._eye_visit_from_beam = False
 
     def stimulus_event(self, kind: str, stimulus_id: str, **details) -> None:
         """Call when changing what draw() presents, not on every frame.

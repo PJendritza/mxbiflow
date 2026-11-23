@@ -4,6 +4,7 @@ import pygame
 from pygame import Event
 
 from mxbiflow.driver import MXBI
+from mxbiflow.driver.detector.detector import DetectorEvent
 
 from ..core.context import MXBIFlow, set_mxbiflow
 from ..core.path import get_data_dir_path
@@ -91,6 +92,8 @@ class Game:
                 self._handle_event(event)
                 if event.type == EVT_DETECTOR:
                     self._mxbiflow.eye_detector_event(event.msg)
+                    if event.msg.kind == DetectorEvent.BEAM_BROKEN:
+                        continue  # Only MX Eye uses presence before the RFID result.
                 self._scheduler.handle_event(event)
                 self._scene_manager.handle_event(event)
 

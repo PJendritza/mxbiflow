@@ -38,4 +38,7 @@ class DetectorBridgeTests(unittest.TestCase):
             )
         with patch("mxbiflow.gameloop.detector_bridge.event.post") as post:
             bridge.emit_pygame_event()
-        post.assert_not_called()
+        # Keep the raw RFID for the eye event log, but no mapped identity is
+        # supplied to the scheduler, so this cannot select another task.
+        self.assertIsNone(post.call_args.args[0].msg.animal)
+        self.assertEqual(post.call_args.args[0].msg.rfid_id, "missing")

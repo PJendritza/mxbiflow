@@ -134,6 +134,8 @@ def _make_eyetracker(config: EyetrackerModel) -> Eyetracker:
                 poll_timeout=config.poll_timeout,
                 max_age_ms=config.max_age_ms,
                 start_acquisition=config.start_acquisition,
+                send_experiment_events=config.send_experiment_events,
+                record_on_animal=config.record_on_animal,
             )
 
         case _:

@@ -10,7 +10,7 @@ from ..core.path import get_data_dir_path
 from ..models.session import Session
 from ..scene import SceneManager
 from ..utils.logger import logger
-from .detector_bridge import DetectorBridge
+from .detector_bridge import EVT_DETECTOR, DetectorBridge
 from .scheduler import Scheduler
 from .shortcuts import ShortcutRegistry, register_default_shortcuts
 
@@ -89,6 +89,8 @@ class Game:
 
             for event in pygame.event.get():
                 self._handle_event(event)
+                if event.type == EVT_DETECTOR:
+                    self._mxbiflow.eye_detector_event(event.msg)
                 self._scheduler.handle_event(event)
                 self._scene_manager.handle_event(event)
 
@@ -97,9 +99,6 @@ class Game:
             self._scheduler.update()
             self._mxbiflow.update()
 
-            self._screen.fill((0, 0, 0))
-
-            self._scene_manager.draw(self._screen)
             if (
                 self._scene_manager.apply_pending()
                 and self._scene_manager.current is not None
@@ -108,7 +107,10 @@ class Game:
                     type(self._scene_manager.current).name()
                 )
 
+            self._screen.fill((0, 0, 0))
+            self._scene_manager.draw(self._screen)
             pygame.display.flip()
+            self._mxbiflow.eye_display_presented()
 
         self.quit()
 
@@ -140,6 +142,7 @@ class Game:
     def quit(self) -> None:
         if self._scene_manager.current is not None:
             self._scene_manager.current.quit()
+        self._mxbiflow.close_eye_events()
         self._session.end()
         self._mxbi.quit()
         if pygame.display.get_init():

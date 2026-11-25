@@ -20,6 +20,8 @@ class MxEyeEyetrackerModel(BaseModel):
     poll_timeout: float = Field(default=0.1, gt=0)
     max_age_ms: float = Field(default=50.0, gt=0)
     start_acquisition: bool = False
+    send_experiment_events: bool = False
+    record_on_animal: bool = False
 
     @property
     def device_type(self) -> str:

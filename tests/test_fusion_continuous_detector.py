@@ -35,7 +35,9 @@ class FusionIdentityTests(unittest.TestCase):
             self.detector._poll_once()
 
     def test_identifies_within_window_and_locks_leave_identity(self) -> None:
-        self.assertEqual(self.events, [])
+        self.assertEqual(
+            self.events, [(DetectorEvent.BEAM_BROKEN, DetectionResult(timestamp=100.0))]
+        )
         self.poll(101.0, Result(100.5, "A"))
         self.poll(102.0, Result(101.5, "A"))
         self.poll(103.0, Result(102.5, "B"))
@@ -44,23 +46,25 @@ class FusionIdentityTests(unittest.TestCase):
         self.assertEqual(
             [event for event, _ in self.events],
             [
+                DetectorEvent.BEAM_BROKEN,
                 DetectorEvent.ANIMAL_ENTERED,
                 DetectorEvent.ANIMAL_LEFT,
             ],
         )
-        self.assertEqual([result.animal_id for _, result in self.events], ["A", "A"])
+        self.assertEqual([result.animal_id for _, result in self.events], [None, "A", "A"])
         self.assertIsNone(self.detector.current_animal)
 
     def test_identifies_after_timeout_without_second_enter_event(self) -> None:
         self.poll(111.0)
         self.poll(112.0)
-        self.assertEqual(len(self.events), 1)
-        self.assertTrue(self.events[0][1].error)
+        self.assertEqual(len(self.events), 2)
+        self.assertTrue(self.events[1][1].error)
         self.poll(130.0, Result(129.5, "A"))
         self.poll(131.0, Result(130.5, "A"))
         self.assertEqual(
             [event for event, _ in self.events],
             [
+                DetectorEvent.BEAM_BROKEN,
                 DetectorEvent.UNKNOWN_ANIMAL_ENTERED,
                 DetectorEvent.ANIMAL_IDENTIFIED,
             ],
@@ -77,6 +81,7 @@ class FusionIdentityTests(unittest.TestCase):
         self.assertEqual(
             [event for event, _ in self.events],
             [
+                DetectorEvent.BEAM_BROKEN,
                 DetectorEvent.UNKNOWN_ANIMAL_ENTERED,
             ],
         )
@@ -85,9 +90,10 @@ class FusionIdentityTests(unittest.TestCase):
     def test_leave_wins_over_tag_and_timeout(self) -> None:
         self.poll(111.0, Result(110.5, "A"), beam=False)
         self.assertEqual(
-            [event for event, _ in self.events], [DetectorEvent.ANIMAL_LEFT]
+            [event for event, _ in self.events],
+            [DetectorEvent.BEAM_BROKEN, DetectorEvent.ANIMAL_LEFT],
         )
-        self.assertIsNone(self.events[0][1].animal_id)
+        self.assertIsNone(self.events[-1][1].animal_id)
 
     def test_unknown_leave_wins_over_late_tag_and_next_entry_starts_fresh(self) -> None:
         self.poll(111.0)
@@ -96,8 +102,10 @@ class FusionIdentityTests(unittest.TestCase):
         self.assertEqual(
             [event for event, _ in self.events],
             [
+                DetectorEvent.BEAM_BROKEN,
                 DetectorEvent.UNKNOWN_ANIMAL_ENTERED,
                 DetectorEvent.ANIMAL_LEFT,
+                DetectorEvent.BEAM_BROKEN,
             ],
         )
         self.poll(121.0, Result(120.5, "B"))
@@ -107,7 +115,8 @@ class FusionIdentityTests(unittest.TestCase):
     def test_valid_tag_wins_over_timeout_in_same_poll(self) -> None:
         self.poll(111.0, Result(110.5, "A"))
         self.assertEqual(
-            [event for event, _ in self.events], [DetectorEvent.ANIMAL_ENTERED]
+            [event for event, _ in self.events],
+            [DetectorEvent.BEAM_BROKEN, DetectorEvent.ANIMAL_ENTERED],
         )
 
     def test_callback_can_read_committed_identity_without_deadlock(self) -> None:

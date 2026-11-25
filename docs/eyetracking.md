@@ -70,6 +70,17 @@ Code outside a scene (for example a helper invoked from `update`) can reach the
 same data through `get_mxbiflow().mxbi.eyetracker.sample()`, which returns
 `None` when no eyetracker is configured.
 
+## Record when the animal enters
+
+With `send_experiment_events` and `record_on_animal` enabled, keep MX Eye
+acquisition running before the task starts. The combined beam and RFID detector
+sends the recording trigger on the beam break. A later RFID read adds the tag and
+any mapped animal name to the same visit in `events.jsonl`. If the tag is never
+read, the recording still ends when the beam clears. `experiment.json` describes
+the moment of entry, when the tag can still be unknown.
+
+The task continues to get its usual identification or timeout event for scheduling.
+
 ## Coordinates
 
 `EyeSample.x`/`y` carry the gaze output supplied in the mx-eye SDK frame's

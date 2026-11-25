@@ -84,9 +84,15 @@ Animal events are automatic. A task must explicitly describe its visual stimuli:
 ```python
 get_mxbiflow().stimulus_event(
     "stimulus_shown", "target-1", stimulus_type="image",
-    position=(512, 300), size=(100, 100), metadata={"image": "apple.png"},
+    position=(512, 300), size=(100, 100),
+    metadata={"image": "apple.png", "tolerance_area": {"radius": 80, "unit": "px"}},
 )
 ```
+
+Every event's `metadata` also carries `stage_level`, the animal's current level
+in its stage, unless the task sets it itself. `stage` carries the stage name.
+Put task-specific values such as the gaze tolerance area in `metadata`; MX Eye
+stores it unchanged in `events.jsonl`.
 
 Call once when updating what `draw()` will show. Use `stimulus_changed` for a
 change, and `stimulus_hidden` when removing it. Coordinates use Pygame's screen

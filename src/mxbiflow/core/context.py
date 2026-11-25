@@ -44,6 +44,14 @@ class MXBIFlow:
             return
         animal = self._session.current_animal
         tracker = self._mxbi.eyetracker
+        # ExperimentEvent has no level field; metadata carries it without a
+        # protocol change. Keep any metadata the task supplied with a stimulus.
+        metadata = dict(fields.pop("metadata", None) or {})
+        if animal is not None and "stage_level" not in metadata:
+            try:
+                metadata["stage_level"] = animal.current_stage.level
+            except ValueError:
+                pass
         sender.send(ExperimentEvent(
             kind=kind, timestamp_ns=timestamp_ns or time.time_ns(),
             run_id=self._run_id, visit_id=self._visit_id,
@@ -54,6 +62,7 @@ class MXBIFlow:
             trial_id=animal.trial_id if animal else None,
             screen_dimensions=(self._mxbi.screen_size.width, self._mxbi.screen_size.height),
             control_recording=bool(getattr(tracker, "record_on_animal", False)),
+            metadata=metadata,
             **fields,
         ))
 
